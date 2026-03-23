@@ -16,6 +16,8 @@ const ICE_SERVERS = {
   ]
 }
 
+const RING_TIMEOUT_MS = 30_000 // 30 seconds
+
 export async function getMediaStreamWithFallback() {
   try {
     return await navigator.mediaDevices.getUserMedia({
@@ -31,6 +33,63 @@ export async function getMediaStreamWithFallback() {
   }
 }
 
+/* ─── Calm ringtone using Web Audio API ──────────────────────── */
+function createRingtone(): { start: () => void; stop: () => void } {
+  let ctx: AudioContext | null = null
+  let interval: ReturnType<typeof setInterval> | null = null
+  let stopped = false
+
+  const playNote = (frequency: number, startTime: number, duration: number) => {
+    if (!ctx || stopped) return
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = frequency
+    gain.gain.setValueAtTime(0, startTime)
+    gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05)
+    gain.gain.setValueAtTime(0.15, startTime + duration - 0.1)
+    gain.gain.linearRampToValueAtTime(0, startTime + duration)
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.start(startTime)
+    osc.stop(startTime + duration)
+  }
+
+  const playChime = () => {
+    if (!ctx || stopped) return
+    const now = ctx.currentTime
+    // Gentle ascending three-note chime: C5 → E5 → G5
+    playNote(523.25, now, 0.3)         // C5
+    playNote(659.25, now + 0.35, 0.3)  // E5
+    playNote(783.99, now + 0.7, 0.4)   // G5
+  }
+
+  return {
+    start: () => {
+      try {
+        ctx = new AudioContext()
+        stopped = false
+        playChime()
+        interval = setInterval(playChime, 3000) // repeat every 3s
+      } catch (_) {}
+    },
+    stop: () => {
+      stopped = true
+      if (interval) clearInterval(interval)
+      interval = null
+      if (ctx) { ctx.close().catch(() => {}); ctx = null }
+    }
+  }
+}
+
+/* ─── Format seconds into "Xm Ys" ───────────────────────────── */
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return s > 0 ? `${m}m ${s}s` : `${m}m`
+}
+
 export function CallOverlay() {
   const { user } = useAuthStore()
   const store = useCallStore()
@@ -39,12 +98,17 @@ export function CallOverlay() {
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const pcRef = useRef<RTCPeerConnection | null>(null)
-  // Buffer ICE candidates that arrive before remoteDescription is set
   const iceQueueRef = useRef<RTCIceCandidateInit[]>([])
+  const ringtoneRef = useRef<ReturnType<typeof createRingtone> | null>(null)
+  const ringTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const callStartRef = useRef<number | null>(null)
+  const [callDuration, setCallDuration] = useState(0)
+  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
 
-  /* ─── Attach local stream to video element ───────────────────── */
+  /* ─── Attach local stream ────────────────────────────────────── */
   useEffect(() => {
     const el = localVideoRef.current
     if (el && store.localStream) {
@@ -53,7 +117,7 @@ export function CallOverlay() {
     }
   }, [store.localStream, store.callState])
 
-  /* ─── Attach remote stream to video element ──────────────────── */
+  /* ─── Attach remote stream ──────────────────────────────────── */
   useEffect(() => {
     const el = remoteVideoRef.current
     if (el && store.remoteStream) {
@@ -62,22 +126,43 @@ export function CallOverlay() {
     }
   }, [store.remoteStream, store.callState])
 
-  /* ─── Build RTCPeerConnection ────────────────────────────────── */
+  /* ─── Call duration timer ────────────────────────────────────── */
+  useEffect(() => {
+    if (store.callState === 'connected' && !callStartRef.current) {
+      callStartRef.current = Date.now()
+      setCallDuration(0)
+      durationIntervalRef.current = setInterval(() => {
+        if (callStartRef.current) {
+          setCallDuration(Math.floor((Date.now() - callStartRef.current) / 1000))
+        }
+      }, 1000)
+    }
+    if (store.callState === 'idle') {
+      if (durationIntervalRef.current) clearInterval(durationIntervalRef.current)
+      durationIntervalRef.current = null
+    }
+  }, [store.callState])
+
+  /* ─── Helpers ────────────────────────────────────────────────── */
+  const drainIce = async (pc: RTCPeerConnection) => {
+    for (const c of iceQueueRef.current) {
+      try { await pc.addIceCandidate(new RTCIceCandidate(c)) } catch (_) {}
+    }
+    iceQueueRef.current = []
+  }
+
   const buildPc = (targetId: string) => {
     const pc = new RTCPeerConnection(ICE_SERVERS)
     pcRef.current = pc
 
     pc.ontrack = (ev) => {
-      if (ev.streams?.[0]) {
-        useCallStore.getState().setRemoteStream(ev.streams[0])
-      }
+      if (ev.streams?.[0]) useCallStore.getState().setRemoteStream(ev.streams[0])
     }
 
     pc.onicecandidate = (ev) => {
       if (ev.candidate) {
         supabase.channel(`call:${targetId}`).send({
-          type: 'broadcast',
-          event: 'call-ice',
+          type: 'broadcast', event: 'call-ice',
           payload: { candidate: ev.candidate.toJSON() }
         })
       }
@@ -86,53 +171,93 @@ export function CallOverlay() {
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'failed') {
         toast.error('Call connection dropped')
-        doEndCall()
+        doEndCall('Call failed')
       }
     }
 
     return pc
   }
 
-  /* ─── Drain buffered ICE candidates ─────────────────────────── */
-  const drainIce = async (pc: RTCPeerConnection) => {
-    for (const c of iceQueueRef.current) {
-      try { await pc.addIceCandidate(new RTCIceCandidate(c)) } catch (_) {}
-    }
-    iceQueueRef.current = []
+  const stopRinging = () => {
+    ringtoneRef.current?.stop()
+    ringtoneRef.current = null
+    if (ringTimeoutRef.current) { clearTimeout(ringTimeoutRef.current); ringTimeoutRef.current = null }
   }
 
-  /* ─── End call helper ────────────────────────────────────────── */
-  const doEndCall = (notifyRemote = true) => {
-    const rid = useCallStore.getState().remoteUserId
-    if (notifyRemote && rid) {
+  const logCall = async (content: string) => {
+    const s = useCallStore.getState()
+    const convId = s.conversationId
+    if (!convId || !user) return
+    await supabase.from('messages').insert({
+      conversation_id: convId,
+      sender_id: user.id,
+      content,
+      type: 'call' as any,
+    }).catch(() => {})
+  }
+
+  const doEndCall = async (reason?: string) => {
+    stopRinging()
+    const s = useCallStore.getState()
+    const rid = s.remoteUserId
+
+    // Log the call
+    if (s.callState === 'connected' && callStartRef.current) {
+      const dur = Math.floor((Date.now() - callStartRef.current) / 1000)
+      await logCall(`Call ended · ${formatDuration(dur)}`)
+    } else if (reason === 'missed') {
+      await logCall('Missed call')
+    } else if (reason === 'declined') {
+      await logCall('Call declined')
+    } else if (reason === 'timeout') {
+      await logCall('Missed call')
+    }
+
+    // Notify remote
+    if (rid) {
       supabase.channel(`call:${rid}`).send({
-        type: 'broadcast',
-        event: 'call-ended',
-        payload: {}
+        type: 'broadcast', event: 'call-ended', payload: { reason: reason || 'ended' }
       }).catch(() => {})
     }
+
     pcRef.current?.close()
     pcRef.current = null
     iceQueueRef.current = []
-    useCallStore.getState().endCall()
+    callStartRef.current = null
+    if (durationIntervalRef.current) clearInterval(durationIntervalRef.current)
+    durationIntervalRef.current = null
+    setCallDuration(0)
+    s.endCall()
   }
 
-  /* ─── Outgoing call – triggered by pendingCall in store ──────── */
+  /* ─── Outgoing call (triggered by pendingCall) ──────────────── */
   useEffect(() => {
     const { pendingCall } = store
     if (!pendingCall || !user) return
 
     ;(async () => {
       try {
-        // 1. Get local media first, show camera right away ──────
         const stream = await getMediaStreamWithFallback()
         const s = useCallStore.getState()
         s.setLocalStream(stream)
         s.setRemoteUser(pendingCall.targetUserId, pendingCall.targetName, pendingCall.targetAvatar, pendingCall.conversationId, false)
-        // Transition to connected UI immediately so local camera is visible
         useCallStore.setState({ callState: 'connected', pendingCall: null })
 
-        // 2. Build PC and create offer in background ────────────
+        // Start ringtone for the caller's feedback
+        const ring = createRingtone()
+        ringtoneRef.current = ring
+        ring.start()
+
+        // Auto-timeout after 30s
+        ringTimeoutRef.current = setTimeout(async () => {
+          stopRinging()
+          const currentState = useCallStore.getState()
+          if (!currentState.remoteStream) {
+            // No one answered
+            await doEndCall('timeout')
+          }
+        }, RING_TIMEOUT_MS)
+
         const pc = buildPc(pendingCall.targetUserId)
         s.setPeerConnection(pc)
         stream.getTracks().forEach(t => pc.addTrack(t, stream))
@@ -140,12 +265,10 @@ export function CallOverlay() {
         const offer = await pc.createOffer()
         await pc.setLocalDescription(offer)
 
-        // 3. Fetch our profile name ─────────────────────────────
         const { data: profile } = await supabase
           .from('profiles').select('display_name,username,avatar_url')
           .eq('id', user.id).single()
 
-        // 4. Broadcast offer to callee ─────────────────────────
         await supabase.channel(`call:${pendingCall.targetUserId}`).send({
           type: 'broadcast',
           event: 'call-offer',
@@ -170,7 +293,6 @@ export function CallOverlay() {
     if (!user) return
     const channel = supabase.channel(`call:${user.id}`)
 
-    // Incoming offer
     channel.on('broadcast', { event: 'call-offer' }, ({ payload }) => {
       if (useCallStore.getState().callState !== 'idle') {
         supabase.channel(`call:${payload.callerId}`).send({
@@ -181,19 +303,32 @@ export function CallOverlay() {
       store.setRemoteUser(payload.callerId, payload.callerName, payload.callerAvatar, payload.conversationId, true)
       store.setCallState('ringing')
       ;(window as any)._pendingOffer = payload.sdp
+
+      // Start ringtone for callee
+      const ring = createRingtone()
+      ringtoneRef.current = ring
+      ring.start()
+
+      // Auto-miss after 30s
+      ringTimeoutRef.current = setTimeout(async () => {
+        stopRinging()
+        if (useCallStore.getState().callState === 'ringing') {
+          await logCall('Missed call')
+          useCallStore.getState().endCall()
+        }
+      }, RING_TIMEOUT_MS)
     })
 
-    // Caller receives callee's answer
     channel.on('broadcast', { event: 'call-answer' }, async ({ payload }) => {
+      stopRinging() // Caller stops ringing when callee answers
       const pc = pcRef.current
       if (!pc) return
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp))
-        await drainIce(pc) // apply any ICE that arrived before answer
+        await drainIce(pc)
       } catch (e) { console.error('answer failed', e) }
     })
 
-    // ICE candidate from remote
     channel.on('broadcast', { event: 'call-ice' }, async ({ payload }) => {
       const pc = pcRef.current
       if (pc?.remoteDescription) {
@@ -203,16 +338,29 @@ export function CallOverlay() {
       }
     })
 
-    channel.on('broadcast', { event: 'call-ended' }, () => {
+    channel.on('broadcast', { event: 'call-ended' }, async ({ payload }) => {
+      stopRinging()
+      const s = useCallStore.getState()
+      // If we were ringing and the caller cancelled, log as missed
+      if (s.callState === 'ringing' && s.isIncoming) {
+        await logCall('Missed call')
+      }
       pcRef.current?.close()
       pcRef.current = null
       iceQueueRef.current = []
-      store.endCall()
+      callStartRef.current = null
+      if (durationIntervalRef.current) clearInterval(durationIntervalRef.current)
+      durationIntervalRef.current = null
+      setCallDuration(0)
+      s.endCall()
     })
 
     channel.on('broadcast', { event: 'call-busy' }, () => {
+      stopRinging()
       toast.error('User is busy')
-      doEndCall(false)
+      pcRef.current?.close()
+      pcRef.current = null
+      useCallStore.getState().endCall()
     })
 
     channel.subscribe()
@@ -221,15 +369,13 @@ export function CallOverlay() {
 
   /* ─── Accept incoming call ───────────────────────────────────── */
   const acceptCall = async () => {
+    stopRinging()
     const remoteId = store.remoteUserId!
     try {
-      // 1. Get local camera immediately ────────────────────────
       const stream = await getMediaStreamWithFallback()
       useCallStore.getState().setLocalStream(stream)
-      // Transition to connected so local camera is visible right away
       useCallStore.setState({ callState: 'connected' })
 
-      // 2. Build PC, add tracks, complete handshake ────────────
       const pc = buildPc(remoteId)
       useCallStore.getState().setPeerConnection(pc)
       stream.getTracks().forEach(t => pc.addTrack(t, stream))
@@ -266,7 +412,7 @@ export function CallOverlay() {
   return (
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-200">
 
-      {/* INCOMING RING ─────────────────────────────────────────── */}
+      {/* INCOMING RING */}
       {store.callState === 'ringing' && store.isIncoming && (
         <div className="flex flex-col items-center space-y-8 animate-in slide-in-from-bottom-10">
           <Avatar className="h-32 w-32 border-4 border-primary/20 animate-pulse">
@@ -278,7 +424,7 @@ export function CallOverlay() {
             <p className="text-primary mt-2 animate-pulse">Incoming Call...</p>
           </div>
           <div className="flex gap-12 mt-12">
-            <button onClick={() => doEndCall()} className="h-16 w-16 bg-destructive text-white rounded-full flex items-center justify-center active:scale-90 shadow-lg">
+            <button onClick={() => doEndCall('declined')} className="h-16 w-16 bg-destructive text-white rounded-full flex items-center justify-center active:scale-90 shadow-lg">
               <PhoneOff className="h-8 w-8" />
             </button>
             <button onClick={acceptCall} className="h-16 w-16 bg-green-500 text-white rounded-full flex items-center justify-center active:scale-90 shadow-lg animate-bounce">
@@ -288,7 +434,7 @@ export function CallOverlay() {
         </div>
       )}
 
-      {/* OUTGOING CALLING (only if somehow not connected yet) ───── */}
+      {/* OUTGOING CALLING */}
       {store.callState === 'calling' && (
         <div className="flex flex-col items-center space-y-8">
           <Avatar className="h-32 w-32 border-4 border-border animate-pulse">
@@ -305,11 +451,11 @@ export function CallOverlay() {
         </div>
       )}
 
-      {/* CONNECTED — room/session view ───────────────────────────── */}
+      {/* CONNECTED */}
       {store.callState === 'connected' && (
         <div className="w-full h-full relative bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10">
 
-          {/* Remote: video if available, else avatar */}
+          {/* Remote video or avatar placeholder */}
           {store.remoteStream ? (
             <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
           ) : (
@@ -319,27 +465,23 @@ export function CallOverlay() {
                   <AvatarImage src={store.remoteUserAvatar || undefined} />
                   <AvatarFallback className="text-4xl">{getInitials(store.remoteUserName || '?')}</AvatarFallback>
                 </Avatar>
-                <p className="text-white/60 text-sm animate-pulse">Connecting…</p>
+                <p className="text-white/60 text-sm animate-pulse">Waiting for {store.remoteUserName}…</p>
               </div>
             </div>
           )}
 
-          {/* Local camera PIP — always visible once in session */}
+          {/* Local camera PIP */}
           <div className="absolute top-6 right-6 w-28 h-40 md:w-36 md:h-52 bg-gray-900 rounded-2xl overflow-hidden border-2 border-white/20 z-10 shadow-2xl">
             <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-            {!store.localStream && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-white/40 text-xs">No camera</span>
-              </div>
-            )}
           </div>
 
-          {/* Remote user label */}
-          {store.remoteStream && (
-            <div className="absolute top-6 left-6 z-10 bg-black/50 backdrop-blur px-4 py-1.5 rounded-full border border-white/10">
-              <span className="text-white text-sm font-medium">{store.remoteUserName}</span>
-            </div>
-          )}
+          {/* Name + duration */}
+          <div className="absolute top-6 left-6 z-10 bg-black/50 backdrop-blur px-4 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+            <span className="text-white text-sm font-medium">{store.remoteUserName}</span>
+            {callDuration > 0 && (
+              <span className="text-white/60 text-xs">· {formatDuration(callDuration)}</span>
+            )}
+          </div>
 
           {/* Controls */}
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-6 bg-black/60 backdrop-blur-xl px-8 py-4 rounded-full border border-white/10 shadow-2xl">

@@ -7,7 +7,7 @@ import { useConversationStore } from '@/lib/stores/useConversationStore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn, getInitials } from '@/lib/utils'
 import { format } from 'date-fns'
-import { Check, CheckCheck, SmilePlus } from 'lucide-react'
+import { Check, CheckCheck, SmilePlus, Phone, PhoneMissed } from 'lucide-react'
 import { LinkPreview } from './LinkPreview'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { buttonVariants } from '@/components/ui/button'
@@ -99,6 +99,25 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
         addReaction(conversationId, message.id, inserted as any)
       }
     }
+  }
+
+  // ─── Call log messages render as centered system entries ──────
+  if (message.type === 'call') {
+    const isMissed = message.content?.startsWith('Missed')
+    return (
+      <div className="flex justify-center py-2">
+        <div className={cn(
+          'flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium border shadow-sm',
+          isMissed 
+            ? 'bg-destructive/10 text-destructive border-destructive/20' 
+            : 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+        )}>
+          {isMissed ? <PhoneMissed className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />}
+          <span>{message.content}</span>
+          <span className="text-muted-foreground ml-1">· {time}</span>
+        </div>
+      </div>
+    )
   }
 
   return (

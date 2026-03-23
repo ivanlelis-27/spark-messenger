@@ -97,7 +97,7 @@ export interface Database {
           conversation_id: string
           sender_id: string
           content: string | null
-          type: 'text' | 'image' | 'audio' | 'emoji'
+          type: 'text' | 'image' | 'audio' | 'emoji' | 'call'
           media_url: string | null
           reply_to: string | null
           is_secret: boolean
@@ -109,7 +109,7 @@ export interface Database {
           conversation_id: string
           sender_id: string
           content?: string | null
-          type?: 'text' | 'image' | 'audio' | 'emoji'
+          type?: 'text' | 'image' | 'audio' | 'emoji' | 'call'
           media_url?: string | null
           reply_to?: string | null
           is_secret?: boolean
@@ -121,7 +121,7 @@ export interface Database {
           conversation_id?: string
           sender_id?: string
           content?: string | null
-          type?: 'text' | 'image' | 'audio' | 'emoji'
+          type?: 'text' | 'image' | 'audio' | 'emoji' | 'call'
           media_url?: string | null
           reply_to?: string | null
           created_at?: string

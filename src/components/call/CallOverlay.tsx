@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/lib/stores/useAuthStore'
 import { useCallStore } from '@/lib/stores/useCallStore'
@@ -24,7 +24,7 @@ export async function getMediaStreamWithFallback() {
     })
   } catch (err: any) {
     if (err.name === 'NotReadableError' || err.name === 'NotAllowedError' || err.name === 'OverconstrainedError') {
-      toast.warning('Camera unavailable or locked. Joining with audio only.')
+      toast.warning('Camera unavailable. Joining with audio only.')
       return await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     }
     throw err
@@ -38,106 +38,144 @@ export function CallOverlay() {
   
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
+  // Use a ref for peerConnection so signaling handlers always get the CURRENT value
+  const pcRef = useRef<RTCPeerConnection | null>(null)
   
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
 
-  // Attach streams to video elements
+  // Attach local stream whenever it changes or connected UI mounts
   useEffect(() => {
     if (localVideoRef.current && store.localStream) {
       localVideoRef.current.srcObject = store.localStream
-      localVideoRef.current.play().catch(err => console.error('Local video play failed:', err))
+      localVideoRef.current.play().catch(() => {})
     }
   }, [store.localStream, store.callState])
 
+  // Attach remote stream whenever it changes or connected UI mounts
   useEffect(() => {
     if (remoteVideoRef.current && store.remoteStream) {
       remoteVideoRef.current.srcObject = store.remoteStream
-      remoteVideoRef.current.play().catch(err => console.error('Remote video play failed:', err))
+      remoteVideoRef.current.play().catch(() => {})
     }
   }, [store.remoteStream, store.callState])
 
-  // Setup Global Signaling Listener
+  // Keep pcRef in sync with the store
+  useEffect(() => {
+    pcRef.current = store.peerConnection
+  }, [store.peerConnection])
+
+  const createPeerConnection = useCallback((targetUserId: string) => {
+    const pc = new RTCPeerConnection(ICE_SERVERS)
+    
+    pc.ontrack = (event) => {
+      if (event.streams && event.streams[0]) {
+        store.setRemoteStream(event.streams[0])
+        // Transition caller to connected when remote tracks arrive
+        useCallStore.setState({ callState: 'connected' })
+      }
+    }
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        supabase.channel(`call:${targetUserId}`).send({
+          type: 'broadcast',
+          event: 'call-ice',
+          payload: { candidate: event.candidate, senderId: user?.id }
+        })
+      }
+    }
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        toast.error('Call connection lost')
+        handleEndCall(targetUserId)
+      }
+    }
+
+    return pc
+  }, [user?.id])
+
+  const handleEndCall = useCallback((targetUserId?: string) => {
+    const remoteId = targetUserId || store.remoteUserId
+    if (remoteId) {
+      supabase.channel(`call:${remoteId}`).send({
+        type: 'broadcast',
+        event: 'call-ended',
+        payload: { enderId: user?.id }
+      }).catch(() => {})
+    }
+    pcRef.current = null
+    store.endCall()
+  }, [store.remoteUserId, user?.id])
+
+  // Global signaling listener
   useEffect(() => {
     if (!user) return
 
     const channel = supabase.channel(`call:${user.id}`)
 
     channel.on('broadcast', { event: 'call-offer' }, async ({ payload }) => {
-      if (store.callState !== 'idle') {
-        // Busy
+      if (useCallStore.getState().callState !== 'idle') {
         supabase.channel(`call:${payload.callerId}`).send({
-          type: 'broadcast',
-          event: 'call-busy',
-          payload: { responderId: user.id }
+          type: 'broadcast', event: 'call-busy', payload: { responderId: user.id }
         })
         return
       }
-      
       store.setRemoteUser(payload.callerId, payload.callerName, payload.callerAvatar, payload.conversationId, true)
       store.setCallState('ringing')
-
-      // Save the offer so we can answer it if user accepts
       ;(window as any)._pendingOffer = payload.sdp
     })
 
     channel.on('broadcast', { event: 'call-answer' }, async ({ payload }) => {
-      if (store.peerConnection) {
-        await store.peerConnection.setRemoteDescription(new RTCSessionDescription(payload.sdp))
+      // Use the ref so we always get the current PC, not a stale closure
+      const pc = pcRef.current
+      if (pc) {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp))
+        } catch (e) {
+          console.error('setRemoteDescription failed', e)
+        }
       }
     })
 
     channel.on('broadcast', { event: 'call-ice' }, async ({ payload }) => {
-      if (store.peerConnection) {
+      const pc = pcRef.current
+      if (pc && pc.remoteDescription) {
         try {
-          await store.peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate))
+          await pc.addIceCandidate(new RTCIceCandidate(payload.candidate))
         } catch (e) {
-          console.error('Error adding received ice candidate', e)
+          console.error('addIceCandidate failed', e)
         }
       }
     })
 
     channel.on('broadcast', { event: 'call-ended' }, () => {
+      pcRef.current = null
       store.endCall()
     })
 
     channel.on('broadcast', { event: 'call-busy' }, () => {
-      alert('User is busy on another call')
+      toast.error('User is busy on another call')
+      pcRef.current = null
       store.endCall()
     })
 
     channel.subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [user, store.callState])
+    return () => { supabase.removeChannel(channel) }
+  }, [user?.id])
 
   const acceptCall = async () => {
     try {
+      const remoteId = store.remoteUserId!
       const stream = await getMediaStreamWithFallback()
       store.setLocalStream(stream)
 
-      const pc = new RTCPeerConnection(ICE_SERVERS)
+      const pc = createPeerConnection(remoteId)
+      pcRef.current = pc
       store.setPeerConnection(pc)
 
       stream.getTracks().forEach(track => pc.addTrack(track, stream))
-
-      pc.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-          store.setRemoteStream(event.streams[0])
-        }
-      }
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate && store.remoteUserId) {
-          supabase.channel(`call:${store.remoteUserId}`).send({
-            type: 'broadcast',
-            event: 'call-ice',
-            payload: { candidate: event.candidate, senderId: user?.id }
-          })
-        }
-      }
 
       const offer = (window as any)._pendingOffer
       if (offer) {
@@ -145,42 +183,35 @@ export function CallOverlay() {
         const answer = await pc.createAnswer()
         await pc.setLocalDescription(answer)
 
-        supabase.channel(`call:${store.remoteUserId}`).send({
+        await supabase.channel(`call:${remoteId}`).send({
           type: 'broadcast',
           event: 'call-answer',
           payload: { sdp: answer, responderId: user?.id }
         })
       }
-      
+
+      // Callee transitions to connected immediately after answering
       store.setCallState('connected')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to accept call', err)
+      toast.error(err?.message || 'Could not start call')
       store.endCall()
     }
   }
 
-  const declineCall = () => {
-    if (store.remoteUserId) {
-      supabase.channel(`call:${store.remoteUserId}`).send({
-        type: 'broadcast',
-        event: 'call-ended',
-        payload: { enderId: user?.id }
-      })
-    }
-    store.endCall()
-  }
+  const declineCall = () => handleEndCall()
 
   const toggleMute = () => {
     if (store.localStream) {
-      store.localStream.getAudioTracks().forEach(t => t.enabled = !t.enabled)
-      setIsMuted(!isMuted)
+      store.localStream.getAudioTracks().forEach(t => { t.enabled = !t.enabled })
+      setIsMuted(m => !m)
     }
   }
 
   const toggleVideo = () => {
     if (store.localStream) {
-      store.localStream.getVideoTracks().forEach(t => t.enabled = !t.enabled)
-      setIsVideoOff(!isVideoOff)
+      store.localStream.getVideoTracks().forEach(t => { t.enabled = !t.enabled })
+      setIsVideoOff(v => !v)
     }
   }
 
@@ -189,6 +220,7 @@ export function CallOverlay() {
   return (
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-200">
       
+      {/* INCOMING RING */}
       {store.callState === 'ringing' && store.isIncoming && (
         <div className="flex flex-col items-center space-y-8 animate-in slide-in-from-bottom-10">
           <Avatar className="h-32 w-32 border-4 border-primary/20 animate-pulse">
@@ -210,7 +242,8 @@ export function CallOverlay() {
         </div>
       )}
 
-      {store.callState === 'ringing' && !store.isIncoming && (
+      {/* OUTGOING RING */}
+      {(store.callState === 'ringing' || store.callState === 'calling') && !store.isIncoming && (
         <div className="flex flex-col items-center space-y-8">
           <Avatar className="h-32 w-32 border-4 border-border">
             <AvatarImage src={store.remoteUserAvatar || undefined} />
@@ -218,7 +251,7 @@ export function CallOverlay() {
           </Avatar>
           <div className="text-center">
             <h2 className="text-2xl font-bold text-foreground">{store.remoteUserName}</h2>
-            <p className="text-muted-foreground mt-2">Calling...</p>
+            <p className="text-muted-foreground mt-2 animate-pulse">Calling...</p>
           </div>
           <div className="mt-12">
             <button onClick={declineCall} className="h-16 w-16 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:opacity-90 transition-transform active:scale-90 shadow-lg">
@@ -228,25 +261,25 @@ export function CallOverlay() {
         </div>
       )}
 
+      {/* CONNECTED */}
       {store.callState === 'connected' && (
         <div className="w-full h-full relative bg-black rounded-3xl overflow-hidden shadow-2xl border border-border/50">
           {/* Remote Video */}
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-          />
+          <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
           
+          {/* If no remote video yet, show avatar placeholder */}
+          {!store.remoteStream && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Avatar className="h-32 w-32">
+                <AvatarImage src={store.remoteUserAvatar || undefined} />
+                <AvatarFallback className="text-4xl">{getInitials(store.remoteUserName || '?')}</AvatarFallback>
+              </Avatar>
+            </div>
+          )}
+
           {/* Local Video PIP */}
-          <div className="absolute top-6 right-6 w-24 h-36 md:w-32 md:h-48 bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 z-10 transition-all hover:scale-105 cursor-pointer">
-            <video
-              ref={localVideoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
+          <div className="absolute top-6 right-6 w-24 h-36 md:w-32 md:h-48 bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 z-10">
+            <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
           </div>
 
           <div className="absolute top-6 left-6 z-10 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
@@ -258,12 +291,10 @@ export function CallOverlay() {
             <button onClick={toggleMute} className={`p-4 rounded-full transition-colors ${isMuted ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}>
               {isMuted ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
             </button>
-            
             <button onClick={declineCall} className="p-5 rounded-full bg-destructive text-white hover:bg-destructive/90 transition-all hover:scale-110 active:scale-95 shadow-[0_0_20px_rgba(239,68,68,0.5)]">
               <PhoneOff className="h-7 w-7" />
             </button>
-
-             <button onClick={toggleVideo} className={`p-4 rounded-full transition-colors ${isVideoOff ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+            <button onClick={toggleVideo} className={`p-4 rounded-full transition-colors ${isVideoOff ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/20'}`}>
               {isVideoOff ? <VideoOff className="h-6 w-6" /> : <Video className="h-6 w-6" />}
             </button>
           </div>

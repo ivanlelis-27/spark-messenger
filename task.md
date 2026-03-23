@@ -75,7 +75,9 @@
 - [x] Verify PWA constraints and fallbacks
 
 ## Phase 11: Performance & UX Engineering
-- [ ] Fix mobile camera playback permissions (WebRTC device constraints configuration)
-- [ ] Add instant page transitions (Loading.tsx and Skeleton layouts for Chats/Settings)
-- [ ] Eliminate "is typing" ghosting delay via explicit `stop_typing` event emission
-- [ ] Implement Optimistic Local UI Rendering for Image Uploads (Instant previews)
+- [x] Fix mobile camera permissions (explicit facingMode constraint + OverconstrainedError fallback)
+- [x] WebRTC stale closure bug fix (pcRef replaces Zustand closure for ICE/answer handlers)
+- [x] Caller state machine fix ('calling' state until ontrack fires, then 'connected')
+- [x] Add instant page transitions (loading.tsx skeletons for /c/[id] and /settings)
+- [x] Fix 'is typing' ghosting — clear on message arrival
+- [x] Optimistic image upload preview (local blob URL shown instantly, replaced on confirm)

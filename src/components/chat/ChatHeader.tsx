@@ -144,7 +144,8 @@ export function ChatHeader({ conversation, currentUserId, onOpenTodos }: ChatHea
                 conversation.id,
                 false
               )
-              store.setCallState('connected') // Transition to in-call UI immediately but waiting for answer
+              // Stay in 'calling' (ringing) — CallOverlay's ontrack will flip to 'connected'
+              store.setCallState('calling')
 
               // Broadcast the offer
               const { data: profile } = await supabase.from('profiles').select('display_name, username, avatar_url').eq('id', currentUserId).single()

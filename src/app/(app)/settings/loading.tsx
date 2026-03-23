@@ -1,5 +1,4 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export default function SettingsLoading() {
   return (
@@ -14,13 +13,10 @@ export default function SettingsLoading() {
         </div>
 
         <div className="space-y-6">
-          {/* Section 1 */}
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <Skeleton className="h-5 w-32 mb-2" />
+          {[0, 1].map((i) => (
+            <div key={i} className="rounded-xl border border-border bg-card p-6 space-y-4">
+              <Skeleton className="h-5 w-32" />
               <Skeleton className="h-4 w-48" />
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-24" />
@@ -28,32 +24,7 @@ export default function SettingsLoading() {
                 </div>
                 <Skeleton className="h-6 w-10 rounded-full" />
               </div>
-              <Skeleton className="h-px w-full bg-border" />
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-                <Skeleton className="h-6 w-10 rounded-full" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Section 2 */}
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <Skeleton className="h-5 w-32 mb-2" />
-              <Skeleton className="h-4 w-48" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-                <Skeleton className="h-6 w-10 rounded-full" />
-              </div>
-              <Skeleton className="h-px w-full bg-border" />
+              <Skeleton className="h-px w-full" />
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <Skeleton className="h-4 w-24" />
@@ -61,8 +32,8 @@ export default function SettingsLoading() {
                 </div>
                 <Skeleton className="h-9 w-24 rounded-md" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          ))}
         </div>
       </div>
     </div>

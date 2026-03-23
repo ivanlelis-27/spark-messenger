@@ -197,6 +197,30 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
           </div>
         </div>
 
+        {/* Reaction Pills */}
+        {Object.keys(reactionGroups).length > 0 && (
+          <div className={cn('flex flex-wrap gap-1 -mt-3.5 z-10 relative mb-1', isOwn ? 'justify-end pr-3' : 'justify-start pl-3')}>
+            {Object.entries(reactionGroups).map(([emoji, reactions]) => {
+              const hasReacted = reactions.some(r => r.user_id === currentUserId)
+              return (
+                <button
+                  key={emoji}
+                  onClick={() => toggleReaction(emoji)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border cursor-pointer transition-colors shadow-sm bg-background',
+                    hasReacted 
+                      ? 'border-primary/50 text-primary' 
+                      : 'border-border text-foreground hover:bg-secondary'
+                  )}
+                >
+                  <span className="text-[13px] leading-none">{emoji}</span>
+                  <span className="text-[10px] font-bold">{reactions.length}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* Time & Read Receipt */}
         <div className={cn("flex flex-row items-center gap-1 mt-0.5 mb-1", isOwn ? "justify-end mr-1" : "justify-start ml-1")}>
           <span className="text-[10px] text-muted-foreground">{time}</span>
@@ -208,30 +232,6 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
             )
           )}
         </div>
-
-        {/* Reaction Pills */}
-        {Object.keys(reactionGroups).length > 0 && (
-          <div className={cn('flex flex-wrap gap-1 -mt-5 z-10 relative pointer-events-none', isOwn ? 'justify-end pr-2' : 'justify-start pl-2')}>
-            {Object.entries(reactionGroups).map(([emoji, reactions]) => {
-              const hasReacted = reactions.some(r => r.user_id === currentUserId)
-              return (
-                <button
-                  key={emoji}
-                  onClick={() => toggleReaction(emoji)}
-                  className={cn(
-                    'flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border cursor-pointer transition-colors shadow-sm pointer-events-auto',
-                    hasReacted 
-                      ? 'bg-primary/10 border-primary/30 text-primary' 
-                      : 'bg-card border-border text-muted-foreground hover:bg-secondary'
-                  )}
-                >
-                  <span className="text-[13px] leading-none">{emoji}</span>
-                  <span className="text-[10px] font-bold">{reactions.length}</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
       </div>
     </div>
   )

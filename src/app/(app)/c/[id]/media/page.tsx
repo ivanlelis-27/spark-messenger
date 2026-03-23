@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,8 @@ interface MediaMessage extends Message {
   sender: Profile | null
 }
 
-export default function MediaVaultPage({ params }: { params: { id: string } }) {
+export default function MediaVaultPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+  const params = use(paramsPromise)
   const router = useRouter()
   const supabase = createClient()
   const [messages, setMessages] = useState<MediaMessage[]>([])

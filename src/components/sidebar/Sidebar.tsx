@@ -72,13 +72,13 @@ export function Sidebar({ currentUser, onMobileNavToChat }: SidebarProps) {
           .select('*, profile:profiles(*)')
           .eq('conversation_id', convo.id)
 
-        const { data: lastMsg } = await supabase
+        const { data: lastMsg } = (await supabase
           .from('messages')
-          .select('content, type, created_at, sender_id')
+          .select('content, type, created_at, sender_id, is_secret')
           .eq('conversation_id', convo.id)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single()
+          .single()) as unknown as { data: { content: string | null, type: string, created_at: string, sender_id: string, is_secret: boolean } | null }
 
         return {
           ...convo,

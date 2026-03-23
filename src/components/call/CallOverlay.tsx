@@ -193,7 +193,7 @@ export function CallOverlay() {
       sender_id: user.id,
       content,
       type: 'call' as any,
-    }).catch(() => {})
+    })
   }
 
   const doEndCall = async (reason?: string) => {

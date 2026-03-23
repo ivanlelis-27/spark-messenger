@@ -71,12 +71,31 @@ export function SharedTodoList({ conversationId, currentUserId, isOpen, onClose 
     if (!title || adding) return
     setAdding(true)
     setNewTitle('')
-    const { error } = await supabase.from('todos').insert({
+
+    // Optimistic add
+    const tempId = `temp-${Date.now()}`
+    const tempTodo: Todo = {
+      id: tempId,
       conversation_id: conversationId,
       created_by: currentUserId,
       title,
-    })
-    if (error) toast.error('Failed to add item')
+      is_completed: false,
+      created_at: new Date().toISOString(),
+    }
+    setTodos(prev => [...prev, tempTodo])
+
+    const { data, error } = await supabase
+      .from('todos')
+      .insert({ conversation_id: conversationId, created_by: currentUserId, title })
+      .select()
+      .single()
+
+    if (error) {
+      toast.error('Failed to add item')
+      setTodos(prev => prev.filter(t => t.id !== tempId))
+    } else if (data) {
+      setTodos(prev => prev.map(t => t.id === tempId ? data as Todo : t))
+    }
     setAdding(false)
     inputRef.current?.focus()
   }

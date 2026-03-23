@@ -65,4 +65,9 @@
 - [x] Idea 2: Love Notes (blur-to-reveal)
 - [x] Idea 3: Live Drawing/Doodling
 - [x] Idea 4: Shared Date Night & To-Do Lists
-- [ ] Idea 5: Daily "Couple Quiz" prompts
+
+## Phase 10: Mobile First Styling
+- [x] Review and fix `100vh` to `100dvh` for mobile Safari/Chrome viewport handling
+- [x] Ensure Sidebar (conversation list) correctly hides on mobile when a chat is open
+- [x] Ensure navigating back from a chat to the list works flawlessly on mobile
+- [x] Fix touch targets, padding, and safe-area adjustments for mobile devices

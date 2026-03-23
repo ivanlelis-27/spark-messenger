@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Loader2, MessageSquareText } from 'lucide-react'
+import { Search, Loader2, MessageSquareText, ArrowLeft } from 'lucide-react'
 import { format } from 'date-fns'
 import { getInitials } from '@/lib/utils'
 import type { Database } from '@/lib/supabase/types'
@@ -63,8 +63,14 @@ export default function SearchPage() {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden relative">
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 safe-area-inset-top">
+        <button
+          onClick={() => router.back()}
+          className="md:hidden p-2 -ml-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="hidden md:flex h-10 w-10 rounded-full bg-primary/20 items-center justify-center text-primary shrink-0">
           <Search className="h-5 w-5" />
         </div>
         <div>

@@ -146,7 +146,7 @@ export function Sidebar({ currentUser, onMobileNavToChat }: SidebarProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-4 border-b border-border safe-area-inset-top">
         <div className="flex items-center gap-3">
           <Link href={`/profile/${currentUser.id}`}>
             <Avatar className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity">

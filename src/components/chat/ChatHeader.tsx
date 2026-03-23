@@ -34,7 +34,7 @@ export function ChatHeader({ conversation, currentUserId, onOpenTodos }: ChatHea
   const memberCount = conversation.participants.length
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm">
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 backdrop-blur-sm safe-area-inset-top">
       <Button
         variant="ghost"
         size="icon"

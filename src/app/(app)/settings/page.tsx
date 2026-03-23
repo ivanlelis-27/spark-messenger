@@ -36,7 +36,7 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 flex flex-col bg-background overflow-y-auto w-full">
       {/* Header */}
-      <div className="h-16 border-b border-border flex items-center px-4 shrink-0 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="h-16 border-b border-border flex items-center px-4 shrink-0 bg-card/50 backdrop-blur-sm sticky top-0 z-10 safe-area-inset-top">
         <div className="md:hidden mr-2">
           <Link href="/">
             <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-10 w-10">

@@ -122,7 +122,7 @@ export default function ProfilePage({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex-1 flex flex-col bg-background overflow-y-auto w-full">
-      <div className="h-16 border-b border-border flex items-center px-4 shrink-0 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="h-16 border-b border-border flex items-center px-4 shrink-0 bg-card/50 backdrop-blur-sm sticky top-0 z-10 safe-area-inset-top">
         <Button variant="ghost" size="icon" className="shrink-0 rounded-full h-10 w-10 mr-2" onClick={() => router.back()}>
           <ArrowLeft className="h-5 w-5" />
         </Button>

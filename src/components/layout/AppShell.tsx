@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import type { Database } from '@/lib/supabase/types'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { cn } from '@/lib/utils'
@@ -13,7 +13,11 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, currentUser }: AppShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const pathname = usePathname()
+  
+  // On mobile, the Sidebar is essentially the "home" view.
+  // Any inner navigation (chat, contacts, settings) takes up the full screen.
+  const isMobileHome = pathname === '/'
 
   return (
     <div className="flex h-full overflow-hidden bg-background">
@@ -22,20 +26,20 @@ export function AppShell({ children, currentUser }: AppShellProps) {
         className={cn(
           'flex-shrink-0 border-r border-border bg-card transition-all duration-300',
           'h-full overflow-hidden',
-          // Mobile: full width when sidebar open, hidden when viewing chat
-          'w-full md:w-[var(--sidebar-width)]',
+          // Show on desktop always. On mobile, show only if on home route.
+          isMobileHome ? 'flex w-full' : 'hidden md:flex w-full md:w-[var(--sidebar-width)]',
         )}
         style={{ '--sidebar-width': '340px' } as React.CSSProperties}
       >
-        <Sidebar currentUser={currentUser} onMobileNavToChat={() => setSidebarOpen(false)} />
+        <Sidebar currentUser={currentUser} />
       </aside>
 
       {/* Main content area */}
       <main
         className={cn(
           'flex-1 flex flex-col overflow-hidden',
-          // On mobile, show main only when sidebar is closed
-          'hidden md:flex',
+          // Show on desktop always. On mobile, hide if showing sidebar home.
+          isMobileHome ? 'hidden md:flex' : 'flex w-full',
         )}
       >
         {children}

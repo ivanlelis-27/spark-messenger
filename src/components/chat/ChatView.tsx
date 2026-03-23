@@ -11,6 +11,7 @@ import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { TypingIndicator } from './TypingIndicator'
 import { Loader2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Participant = Database['public']['Tables']['participants']['Row']
@@ -203,8 +204,27 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
         {isLoadingMessages ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="flex flex-col gap-6 py-8 md:px-2 w-full mx-auto">
+            <div className="flex items-end gap-2 w-[85%] sm:w-3/4">
+              <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-16 w-full rounded-2xl rounded-bl-sm" />
+                <Skeleton className="h-3 w-12 ml-1" />
+              </div>
+            </div>
+            <div className="flex items-end gap-2 w-[85%] sm:w-3/4 self-end flex-row-reverse">
+              <div className="space-y-2 flex-1 flex flex-col items-end">
+                <Skeleton className="h-12 w-[80%] rounded-2xl rounded-br-sm bg-primary/20" />
+                <Skeleton className="h-3 w-12 mr-1" />
+              </div>
+            </div>
+            <div className="flex items-end gap-2 w-[85%] sm:w-3/4">
+              <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-12 w-[60%] rounded-2xl rounded-bl-sm" />
+                <Skeleton className="h-3 w-12 ml-1" />
+              </div>
+            </div>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">

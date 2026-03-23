@@ -10,7 +10,8 @@ import { cn, formatMessageTime, getInitials } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Search, SquarePen, LogOut, MessageSquare, Users } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Search, SquarePen, Settings, MessageSquare, Users } from 'lucide-react'
 import Link from 'next/link'
 import { NewConversationDialog } from '@/components/sidebar/NewConversationDialog'
 import { EnableNotificationsButton } from '@/components/pwa/PushManager'
@@ -26,7 +27,7 @@ export function Sidebar({ currentUser, onMobileNavToChat }: SidebarProps) {
   const router = useRouter()
   const supabase = createClient()
   const { setUser } = useAuthStore()
-  const { conversations, setConversations, activeConversation, setIsLoading } = useConversationStore()
+  const { conversations, setConversations, activeConversation, setIsLoading, isLoading } = useConversationStore()
   const [search, setSearch] = useState('')
   const [newChatOpen, setNewChatOpen] = useState(false)
 
@@ -146,12 +147,14 @@ export function Sidebar({ currentUser, onMobileNavToChat }: SidebarProps) {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={currentUser.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-              {getInitials(currentUser.display_name || currentUser.username)}
-            </AvatarFallback>
-          </Avatar>
+          <Link href={`/profile/${currentUser.id}`}>
+            <Avatar className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity">
+              <AvatarImage src={currentUser.avatar_url || undefined} />
+              <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
+                {getInitials(currentUser.display_name || currentUser.username)}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <div>
             <h1 className="text-base font-semibold text-foreground leading-none">Chats</h1>
           </div>
@@ -172,14 +175,15 @@ export function Sidebar({ currentUser, onMobileNavToChat }: SidebarProps) {
             <SquarePen className="h-5 w-5" />
           </Button>
           <EnableNotificationsButton />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <Link href="/settings">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -198,7 +202,17 @@ export function Sidebar({ currentUser, onMobileNavToChat }: SidebarProps) {
 
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3">
+              <Skeleton className="h-11 w-11 rounded-full shrink-0" />
+              <div className="flex-1 space-y-2 py-1">
+                <Skeleton className="h-4 w-[60%]" />
+                <Skeleton className="h-3 w-[40%]" />
+              </div>
+            </div>
+          ))
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
             <MessageSquare className="h-8 w-8 mb-2 opacity-40" />
             <p className="text-sm">No conversations yet</p>

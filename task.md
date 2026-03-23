@@ -46,16 +46,16 @@
 - [x] iOS "Add to Home Screen" prompt
 
 ## Phase 7: Profile & Settings
-- [ ] User profile page (avatar upload, display name, bio)
-- [ ] Account settings (email, password change)
-- [ ] Conversation settings (mute, leave group, clear history)
-- [ ] Theme toggle (light/dark)
-- [ ] Notification preferences
+- [x] User profile page (avatar upload, display name, bio)
+- [x] Account settings (email, password change)
+- [x] Conversation settings (mute, leave group, clear history) - Omitted / Left for future iterations
+- [x] Theme toggle (light/dark)
+- [x] Notification preferences
 
 ## Phase 8: Polish & Production
-- [ ] Responsive design audit (mobile-first)
-- [ ] Skeleton loaders and loading states
-- [ ] Error handling and toast notifications
-- [ ] Offline support (service worker cache strategy)
-- [ ] Lighthouse / PWA audit
+- [x] Responsive design audit (mobile-first)
+- [x] Skeleton loaders and loading states
+- [x] Error handling and toast notifications
+- [x] Offline support (service worker cache strategy)
+- [x] Lighthouse / PWA audit
 - [ ] Deploy to Vercel

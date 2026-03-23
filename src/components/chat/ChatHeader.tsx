@@ -88,14 +88,23 @@ export function ChatHeader({ conversation, currentUserId, onOpenTodos }: ChatHea
             size="icon" 
             className="text-muted-foreground hover:text-foreground"
             onClick={async () => {
-            if (!otherParticipant?.user_id) return
+            if (!otherParticipant?.user_id) {
+              toast.error('No participant found to call')
+              return
+            }
             try {
               const { useCallStore } = await import('@/lib/stores/useCallStore')
               const store = useCallStore.getState()
               
-              if (store.callState !== 'idle') return
+              if (store.callState !== 'idle') {
+                toast.error('You are already handling a call')
+                return
+              }
 
+              toast.loading('Requesting camera permissions...')
               const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+              toast.dismiss()
+              
               store.setLocalStream(stream)
 
               const pc = new RTCPeerConnection({
@@ -150,9 +159,10 @@ export function ChatHeader({ conversation, currentUserId, onOpenTodos }: ChatHea
                   conversationId: conversation.id
                 }
               })
-            } catch (err) {
+            } catch (err: any) {
+              toast.dismiss()
               console.error('Failed to initiate call:', err)
-              toast.error('Could not access camera/microphone')
+              toast.error(err?.message || 'Could not access camera/microphone')
             }
           }}
         >

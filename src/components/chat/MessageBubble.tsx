@@ -104,7 +104,8 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
   return (
     <div
       className={cn(
-        'group flex gap-2 max-w-[85%] md:max-w-[70%] mt-1',
+        'group flex gap-2 max-w-[85%] md:max-w-[70%]',
+        showAvatar ? 'mt-4' : 'mt-1',
         isOwn ? 'ml-auto flex-row-reverse' : 'mr-auto',
         !showAvatar && !isOwn && 'ml-10'
       )}

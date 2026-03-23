@@ -238,7 +238,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-foreground shrink-0 mb-1"
+              className="text-muted-foreground hover:text-foreground shrink-0"
               onClick={() => fileInputRef.current?.click()}
               disabled={sending}
             >
@@ -248,7 +248,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
             {/* Emoji Popover */}
             <Popover>
               <PopoverTrigger 
-                className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground shrink-0 mb-1' })}
+                className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground shrink-0 h-10 w-10' })}
                 disabled={sending}
               >
                 <Smile className="h-5 w-5" />
@@ -275,7 +275,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
               title="Send as Love Note (tap to reveal)"
               onClick={() => setIsSecret(v => !v)}
               className={cn(
-                'rounded-full transition-colors shrink-0 flex items-center justify-center mb-1 h-10 w-10',
+                'rounded-full transition-colors shrink-0 flex items-center justify-center h-10 w-10',
                 isSecret
                   ? 'text-pink-500 bg-pink-500/10 hover:bg-pink-500/20'
                   : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
@@ -292,7 +292,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
                 placeholder="Type a message..."
                 rows={1}
                 disabled={sending}
-                className="w-full resize-none bg-secondary rounded-2xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 max-h-[120px] scrollbar-thin disabled:opacity-50"
+                className="w-full resize-none bg-secondary rounded-2xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 min-h-[40px] max-h-[120px] scrollbar-thin disabled:opacity-50"
               />
             </div>
           </>
@@ -319,7 +319,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
         <Button
           size="icon"
           className={cn(
-            "rounded-full shrink-0 h-10 w-10 mb-1 transition-colors shadow-sm",
+            "rounded-full shrink-0 h-10 w-10 transition-colors shadow-sm",
             isRecording || text.trim() 
               ? "bg-primary hover:bg-primary/90 text-primary-foreground" 
               : "bg-secondary text-foreground hover:bg-secondary/80"

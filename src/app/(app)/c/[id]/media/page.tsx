@@ -27,7 +27,7 @@ export default function MediaVaultPage({ params }: { params: { id: string } }) {
     async function fetchMedia() {
       const { data, error } = await supabase
         .from('messages')
-        .select('*, sender:profiles(*)')
+        .select('*, sender:profiles!messages_sender_id_fkey(*)')
         .eq('conversation_id', params.id)
         .in('type', ['image', 'audio'])
         .order('created_at', { ascending: false })

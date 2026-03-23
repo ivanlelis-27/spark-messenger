@@ -31,13 +31,13 @@ export function CallOverlay() {
     if (localVideoRef.current && store.localStream) {
       localVideoRef.current.srcObject = store.localStream
     }
-  }, [store.localStream])
+  }, [store.localStream, store.callState])
 
   useEffect(() => {
     if (remoteVideoRef.current && store.remoteStream) {
       remoteVideoRef.current.srcObject = store.remoteStream
     }
-  }, [store.remoteStream])
+  }, [store.remoteStream, store.callState])
 
   // Setup Global Signaling Listener
   useEffect(() => {

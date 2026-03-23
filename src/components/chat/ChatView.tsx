@@ -10,6 +10,7 @@ import { ChatHeader } from './ChatHeader'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { TypingIndicator } from './TypingIndicator'
+import { NudgeOverlay } from './NudgeOverlay'
 import { Loader2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -28,6 +29,7 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
   const { setActiveConversation, updateParticipant } = useConversationStore()
   const { setTyping } = usePresenceStore()
   const [initialLoadDone, setInitialLoadDone] = useState(false)
+  const [isShaking, setIsShaking] = useState(false)
 
   const messages = messagesByConversation[conversation.id] || []
 
@@ -200,6 +202,21 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
     }
   }, [supabase, conversation.id, currentUser.id, setTyping])
 
+  // Nudge (Miss You) broadcast listener
+  useEffect(() => {
+    const channel = supabase.channel(`nudge:${conversation.id}`)
+    channel
+      .on('broadcast', { event: 'nudge' }, ({ payload }) => {
+        if (payload.from !== currentUser.id) {
+          setIsShaking(true)
+        }
+      })
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [supabase, conversation.id, currentUser.id])
+
   function handleTyping() {
     supabase.channel(`typing:${conversation.id}`).send({
       type: 'broadcast',
@@ -221,7 +238,13 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className={`flex flex-col h-full bg-background ${isShaking ? 'animate-screen-shake' : ''}`}>
+      <NudgeOverlay
+        conversationId={conversation.id}
+        currentUserId={currentUser.id}
+        shake={isShaking}
+        onShakeDone={() => setIsShaking(false)}
+      />
       <ChatHeader conversation={conversation} currentUserId={currentUser.id} />
 
       {/* Messages */}

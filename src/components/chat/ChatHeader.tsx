@@ -2,11 +2,14 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useState } from 'react'
 import type { ConversationWithDetails } from '@/lib/stores/useConversationStore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
-import { ArrowLeft, Phone, Image as ImageIcon, Info } from 'lucide-react'
+import { ArrowLeft, Phone, Image as ImageIcon, Info, Heart } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 interface ChatHeaderProps {
   conversation: ConversationWithDetails
@@ -15,6 +18,8 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ conversation, currentUserId }: ChatHeaderProps) {
   const router = useRouter()
+  const supabase = createClient()
+  const [nudgeCooldown, setNudgeCooldown] = useState(false)
 
   const otherParticipant = conversation.participants.find((p) => p.user_id !== currentUserId)
   const name =
@@ -53,6 +58,29 @@ export function ChatHeader({ conversation, currentUserId }: ChatHeaderProps) {
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
+        {/* Miss You button */}
+        <button
+          title="Send a Miss You 💕"
+          disabled={nudgeCooldown}
+          onClick={async () => {
+            if (nudgeCooldown) return
+            setNudgeCooldown(true)
+            await supabase.channel(`nudge:${conversation.id}`).send({
+              type: 'broadcast',
+              event: 'nudge',
+              payload: { from: currentUserId },
+            })
+            toast('💕 Miss You sent!')
+            setTimeout(() => setNudgeCooldown(false), 5000)
+          }}
+          className={`p-2 rounded-full transition-all ${
+            nudgeCooldown
+              ? 'text-pink-300 opacity-50 cursor-not-allowed'
+              : 'text-muted-foreground hover:text-pink-500 hover:bg-pink-500/10 active:scale-90'
+          }`}
+        >
+          <Heart className="h-4 w-4" fill={nudgeCooldown ? 'currentColor' : 'none'} />
+        </button>
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
           <Phone className="h-4 w-4" />
         </Button>

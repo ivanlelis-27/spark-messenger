@@ -7,12 +7,25 @@ import { useCallStore } from '@/lib/stores/useCallStore'
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getInitials } from '@/lib/utils'
+import { toast } from 'sonner'
 
 const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:global.stun.twilio.com:3478' }
   ]
+}
+
+export async function getMediaStreamWithFallback() {
+  try {
+    return await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+  } catch (err: any) {
+    if (err.name === 'NotReadableError' || err.name === 'NotAllowedError') {
+      toast.warning('Camera unavailable or locked. Joining with audio only.')
+      return await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    }
+    throw err
+  }
 }
 
 export function CallOverlay() {
@@ -97,7 +110,7 @@ export function CallOverlay() {
 
   const acceptCall = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+      const stream = await getMediaStreamWithFallback()
       store.setLocalStream(stream)
 
       const pc = new RTCPeerConnection(ICE_SERVERS)

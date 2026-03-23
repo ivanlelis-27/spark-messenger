@@ -7,9 +7,10 @@ import type { ConversationWithDetails } from '@/lib/stores/useConversationStore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
-import { ArrowLeft, Phone, Image as ImageIcon, Info, Heart, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Phone, PhoneOff, Image as ImageIcon, Info, Heart, ClipboardList } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { getMediaStreamWithFallback } from '@/components/call/CallOverlay'
 
 interface ChatHeaderProps {
   conversation: ConversationWithDetails
@@ -102,7 +103,7 @@ export function ChatHeader({ conversation, currentUserId, onOpenTodos }: ChatHea
               }
 
               toast.loading('Requesting camera permissions...')
-              const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+              const stream = await getMediaStreamWithFallback()
               toast.dismiss()
               
               store.setLocalStream(stream)

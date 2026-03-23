@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { ThemeProvider } from "@/components/theme-provider";
+import { CallOverlay } from "@/components/call/CallOverlay";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -55,6 +56,7 @@ export default function RootLayout({
         >
           {children}
           <InstallPrompt />
+          <CallOverlay />
           <Toaster richColors position="top-center" />
         </ThemeProvider>
       </body>

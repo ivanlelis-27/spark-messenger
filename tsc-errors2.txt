@@ -1,0 +1,39 @@
+﻿src/app/(app)/c/[id]/page.tsx(56,5): error TS2698: Spread types may only be created from object types.
+src/app/(auth)/register/page.tsx(50,71): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ ...; }, ... 5 more ..., "POST">', gave the following error.
+    Argument of type '{ id: string; username: string; display_name: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+src/app/auth/callback/route.ts(23,41): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "profiles", never, "POST">', gave the following error.
+    Argument of type '{ id: string; username: any; display_name: any; avatar_url: any; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "profiles", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type 'never[]'.
+src/components/chat/MessageInput.tsx(43,55): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "messages", never, "POST">', gave the following error.
+    Argument of type '{ conversation_id: string; sender_id: string; content: string; type: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "messages", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'conversation_id' does not exist in type 'never[]'.
+src/components/chat/MessageInput.tsx(86,37): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "messages", never, "POST">', gave the following error.
+    Argument of type '{ conversation_id: string; sender_id: string; content: null; type: string; media_url: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "messages", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'conversation_id' does not exist in type 'never[]'.
+src/components/sidebar/NewConversationDialog.tsx(65,54): error TS2339: Property 'conversation_id' does not exist on type 'never'.
+src/components/sidebar/NewConversationDialog.tsx(78,42): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/sidebar/NewConversationDialog.tsx(83,37): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/sidebar/NewConversationDialog.tsx(95,8): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "conversations", never, "POST">', gave the following error.
+    Argument of type '{ type: string; created_by: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "conversations", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'type' does not exist in type 'never[]'.
+src/components/sidebar/NewConversationDialog.tsx(101,50): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "participants", never, "POST">', gave the following error.
+    Argument of type '{ conversation_id: any; user_id: string; }[]' is not assignable to parameter of type 'never'.
+src/components/sidebar/NewConversationDialog.tsx(102,37): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/sidebar/NewConversationDialog.tsx(103,37): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/sidebar/NewConversationDialog.tsx(105,34): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/sidebar/Sidebar.tsx(50,58): error TS2339: Property 'conversation_id' does not exist on type 'never'.
+src/components/sidebar/Sidebar.tsx(70,40): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/sidebar/Sidebar.tsx(75,40): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/sidebar/Sidebar.tsx(81,11): error TS2698: Spread types may only be created from object types.

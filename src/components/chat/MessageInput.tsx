@@ -292,7 +292,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
                 placeholder="Type a message..."
                 rows={1}
                 disabled={sending}
-                className="w-full resize-none bg-secondary rounded-2xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 min-h-[40px] max-h-[120px] scrollbar-thin disabled:opacity-50"
+                className="w-full resize-none bg-secondary rounded-2xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 min-h-[40px] max-h-[120px] scrollbar-thin disabled:opacity-50"
               />
             </div>
           </>

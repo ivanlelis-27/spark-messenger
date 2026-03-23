@@ -7,16 +7,17 @@ import type { ConversationWithDetails } from '@/lib/stores/useConversationStore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
-import { ArrowLeft, Phone, Image as ImageIcon, Info, Heart } from 'lucide-react'
+import { ArrowLeft, Phone, Image as ImageIcon, Info, Heart, ClipboardList } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 interface ChatHeaderProps {
   conversation: ConversationWithDetails
   currentUserId: string
+  onOpenTodos: () => void
 }
 
-export function ChatHeader({ conversation, currentUserId }: ChatHeaderProps) {
+export function ChatHeader({ conversation, currentUserId, onOpenTodos }: ChatHeaderProps) {
   const router = useRouter()
   const supabase = createClient()
   const [nudgeCooldown, setNudgeCooldown] = useState(false)
@@ -87,6 +88,13 @@ export function ChatHeader({ conversation, currentUserId }: ChatHeaderProps) {
         <Link href={`/c/${conversation.id}/media`} className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground text-primary/80 hover:text-primary' })}>
           <ImageIcon className="h-4 w-4" />
         </Link>
+        <button
+          title="Our List"
+          onClick={onOpenTodos}
+          className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors active:scale-90"
+        >
+          <ClipboardList className="h-4 w-4" />
+        </button>
         <Link href={`/c/${conversation.id}/settings`} className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground' })}>
           <Info className="h-4 w-4" />
         </Link>

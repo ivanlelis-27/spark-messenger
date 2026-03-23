@@ -11,6 +11,7 @@ import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { TypingIndicator } from './TypingIndicator'
 import { NudgeOverlay } from './NudgeOverlay'
+import { SharedTodoList } from './SharedTodoList'
 import { Loader2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -30,6 +31,7 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
   const { setTyping } = usePresenceStore()
   const [initialLoadDone, setInitialLoadDone] = useState(false)
   const [isShaking, setIsShaking] = useState(false)
+  const [isTodosOpen, setIsTodosOpen] = useState(false)
 
   const messages = messagesByConversation[conversation.id] || []
 
@@ -245,7 +247,17 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
         shake={isShaking}
         onShakeDone={() => setIsShaking(false)}
       />
-      <ChatHeader conversation={conversation} currentUserId={currentUser.id} />
+      <SharedTodoList
+        conversationId={conversation.id}
+        currentUserId={currentUser.id}
+        isOpen={isTodosOpen}
+        onClose={() => setIsTodosOpen(false)}
+      />
+      <ChatHeader
+        conversation={conversation}
+        currentUserId={currentUser.id}
+        onOpenTodos={() => setIsTodosOpen(true)}
+      />
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">

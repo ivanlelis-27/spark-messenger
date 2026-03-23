@@ -26,7 +26,7 @@ interface ChatViewProps {
 export function ChatView({ conversation, currentUser }: ChatViewProps) {
   const supabase = createClient()
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const { messagesByConversation, setMessages, addMessage, isLoadingMessages, setIsLoadingMessages, addReaction, removeReaction } = useMessageStore()
+  const { messagesByConversation, setMessages, addMessage, isLoadingMessages, setIsLoadingMessages, addReaction, removeReaction, pendingMessagesByConversation } = useMessageStore()
   const { setActiveConversation, updateParticipant } = useConversationStore()
   const { setTyping } = usePresenceStore()
   const [initialLoadDone, setInitialLoadDone] = useState(false)
@@ -291,7 +291,7 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
           </div>
         ) : (
           <>
-            {([...messages, ...(useMessageStore(s => s.pendingMessagesByConversation[conversation.id] || []))]).map((msg, idx, arr) => {
+            {([...messages, ...(pendingMessagesByConversation[conversation.id] || [])]).map((msg, idx, arr) => {
               const prevMsg = idx > 0 ? arr[idx - 1] : null
               const showDateLabel =
                 !prevMsg || getDateLabel(msg.created_at) !== getDateLabel(prevMsg.created_at)

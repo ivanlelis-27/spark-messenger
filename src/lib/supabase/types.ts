@@ -100,6 +100,7 @@ export interface Database {
           type: 'text' | 'image' | 'audio' | 'emoji'
           media_url: string | null
           reply_to: string | null
+          is_secret: boolean
           created_at: string
           edited_at: string | null
         }
@@ -111,6 +112,7 @@ export interface Database {
           type?: 'text' | 'image' | 'audio' | 'emoji'
           media_url?: string | null
           reply_to?: string | null
+          is_secret?: boolean
           created_at?: string
           edited_at?: string | null
         }
@@ -147,6 +149,33 @@ export interface Database {
           message_id?: string
           user_id?: string
           emoji?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      todos: {
+        Row: {
+          id: string
+          conversation_id: string
+          created_by: string
+          title: string
+          is_completed: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          created_by: string
+          title: string
+          is_completed?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          created_by?: string
+          title?: string
+          is_completed?: boolean
           created_at?: string
         }
         Relationships: []

@@ -57,7 +57,7 @@ export function SharedTodoList({ conversationId, currentUserId, isOpen, onClose 
   }, [isOpen])
 
   async function fetchTodos() {
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('todos')
       .select('*')
       .eq('conversation_id', conversationId)
@@ -71,7 +71,7 @@ export function SharedTodoList({ conversationId, currentUserId, isOpen, onClose 
     if (!title || adding) return
     setAdding(true)
     setNewTitle('')
-    const { error } = await (supabase as any).from('todos').insert({
+    const { error } = await supabase.from('todos').insert({
       conversation_id: conversationId,
       created_by: currentUserId,
       title,
@@ -84,13 +84,13 @@ export function SharedTodoList({ conversationId, currentUserId, isOpen, onClose 
   async function toggleTodo(todo: Todo) {
     // Optimistic update
     setTodos(prev => prev.map(t => t.id === todo.id ? { ...t, is_completed: !t.is_completed } : t))
-    await (supabase as any).from('todos').update({ is_completed: !todo.is_completed }).eq('id', todo.id)
+    await supabase.from('todos').update({ is_completed: !todo.is_completed }).eq('id', todo.id)
   }
 
   async function deleteTodo(id: string) {
     // Optimistic delete
     setTodos(prev => prev.filter(t => t.id !== id))
-    await (supabase as any).from('todos').delete().eq('id', id)
+    await supabase.from('todos').delete().eq('id', id)
   }
 
   const pending = todos.filter(t => !t.is_completed)

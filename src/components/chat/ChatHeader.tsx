@@ -84,91 +84,24 @@ export function ChatHeader({ conversation, currentUserId, onOpenTodos }: ChatHea
           <Heart className="h-4 w-4" fill={nudgeCooldown ? 'currentColor' : 'none'} />
         </button>
         {conversation.type !== 'group' && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="text-muted-foreground hover:text-foreground"
             onClick={async () => {
-            if (!otherParticipant?.user_id) {
-              toast.error('No participant found to call')
-              return
-            }
-            try {
+              if (!otherParticipant?.user_id) { toast.error('No participant found'); return }
               const { useCallStore } = await import('@/lib/stores/useCallStore')
-              const store = useCallStore.getState()
-              
-              if (store.callState !== 'idle') {
-                toast.error('You are already handling a call')
-                return
-              }
-
-              toast.loading('Requesting camera permissions...')
-              const stream = await getMediaStreamWithFallback()
-              toast.dismiss()
-              
-              store.setLocalStream(stream)
-
-              const pc = new RTCPeerConnection({
-                iceServers: [
-                  { urls: 'stun:stun.l.google.com:19302' },
-                  { urls: 'stun:global.stun.twilio.com:3478' }
-                ]
+              const callStore = useCallStore.getState()
+              if (callStore.callState !== 'idle') { toast.error('Already in a call'); return }
+              callStore.setPendingCall({
+                targetUserId: otherParticipant.user_id,
+                targetName: name,
+                targetAvatar: avatarUrl,
+                conversationId: conversation.id,
               })
-              store.setPeerConnection(pc)
-
-              stream.getTracks().forEach(track => pc.addTrack(track, stream))
-
-              pc.ontrack = (event) => {
-                if (event.streams && event.streams[0]) {
-                  store.setRemoteStream(event.streams[0])
-                }
-              }
-
-              pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                  supabase.channel(`call:${otherParticipant.user_id}`).send({
-                    type: 'broadcast',
-                    event: 'call-ice',
-                    payload: { candidate: event.candidate, senderId: currentUserId }
-                  })
-                }
-              }
-
-              const offer = await pc.createOffer()
-              await pc.setLocalDescription(offer)
-
-              store.setRemoteUser(
-                otherParticipant.user_id,
-                name,
-                avatarUrl,
-                conversation.id,
-                false
-              )
-              // Stay in 'calling' (ringing) — CallOverlay's ontrack will flip to 'connected'
-              store.setCallState('calling')
-
-              // Broadcast the offer
-              const { data: profile } = await supabase.from('profiles').select('display_name, username, avatar_url').eq('id', currentUserId).single()
-              
-              await supabase.channel(`call:${otherParticipant.user_id}`).send({
-                type: 'broadcast',
-                event: 'call-offer',
-                payload: {
-                  sdp: offer,
-                  callerId: currentUserId,
-                  callerName: profile?.display_name || profile?.username || 'Unknown',
-                  callerAvatar: profile?.avatar_url,
-                  conversationId: conversation.id
-                }
-              })
-            } catch (err: any) {
-              toast.dismiss()
-              console.error('Failed to initiate call:', err)
-              toast.error(err?.message || 'Could not access camera/microphone')
-            }
-          }}
-        >
-          <Phone className="h-4 w-4" />
+            }}
+          >
+            <Phone className="h-4 w-4" />
           </Button>
         )}
         <Link href={`/c/${conversation.id}/media`} className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground text-primary/80 hover:text-primary' })}>

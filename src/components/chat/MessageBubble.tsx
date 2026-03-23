@@ -104,7 +104,7 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
   return (
     <div
       className={cn(
-        'group flex gap-2 max-w-[85%] md:max-w-[70%]',
+        'group flex gap-2 max-w-[85%] md:max-w-[70%] mt-1',
         isOwn ? 'ml-auto flex-row-reverse' : 'mr-auto',
         !showAvatar && !isOwn && 'ml-10'
       )}
@@ -135,7 +135,7 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
               isOwn
                 ? 'bg-primary text-primary-foreground rounded-br-sm'
                 : 'bg-card border border-border text-foreground rounded-bl-sm',
-              isSecret && !revealed && 'min-w-[140px] min-h-[64px] select-none'
+              isSecret && !revealed && 'min-w-[140px] select-none py-4'
             )}
           >
             {/* Love Note — hide content until tapped */}
@@ -197,9 +197,21 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
           </div>
         </div>
 
+        {/* Time & Read Receipt */}
+        <div className={cn("flex flex-row items-center gap-1 mt-0.5 mb-1", isOwn ? "justify-end mr-1" : "justify-start ml-1")}>
+          <span className="text-[10px] text-muted-foreground">{time}</span>
+          {isOwn && (
+            isRead ? (
+              <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+            ) : (
+              <Check className="h-3.5 w-3.5 text-muted-foreground" />
+            )
+          )}
+        </div>
+
         {/* Reaction Pills */}
         {Object.keys(reactionGroups).length > 0 && (
-          <div className={cn('flex flex-wrap gap-1 mt-1 -mb-1 z-10 relative', isOwn ? 'justify-end' : 'justify-start')}>
+          <div className={cn('flex flex-wrap gap-1 -mt-5 z-10 relative pointer-events-none', isOwn ? 'justify-end pr-2' : 'justify-start pl-2')}>
             {Object.entries(reactionGroups).map(([emoji, reactions]) => {
               const hasReacted = reactions.some(r => r.user_id === currentUserId)
               return (
@@ -207,31 +219,19 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
                   key={emoji}
                   onClick={() => toggleReaction(emoji)}
                   className={cn(
-                    'flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border cursor-pointer transition-colors shadow-sm',
+                    'flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium border cursor-pointer transition-colors shadow-sm pointer-events-auto',
                     hasReacted 
                       ? 'bg-primary/10 border-primary/30 text-primary' 
                       : 'bg-card border-border text-muted-foreground hover:bg-secondary'
                   )}
                 >
-                  <span className="text-sm">{emoji}</span>
-                  <span className="text-[11px]">{reactions.length}</span>
+                  <span className="text-[13px] leading-none">{emoji}</span>
+                  <span className="text-[10px] font-bold">{reactions.length}</span>
                 </button>
               )
             })}
           </div>
         )}
-
-        {/* Time & Read Receipt */}
-        <div className="flex items-center gap-1 mt-1.5 mx-1">
-          <span className="text-[10px] text-muted-foreground">{time}</span>
-          {isOwn && (
-            isRead ? (
-              <CheckCheck className="h-3 w-3 text-blue-500" />
-            ) : (
-              <Check className="h-3 w-3 text-muted-foreground" />
-            )
-          )}
-        </div>
       </div>
     </div>
   )

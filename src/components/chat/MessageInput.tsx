@@ -238,7 +238,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-foreground shrink-0 mb-0.5"
+              className="text-muted-foreground hover:text-foreground shrink-0 mb-1"
               onClick={() => fileInputRef.current?.click()}
               disabled={sending}
             >
@@ -248,7 +248,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
             {/* Emoji Popover */}
             <Popover>
               <PopoverTrigger 
-                className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground shrink-0 mb-0.5' })}
+                className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground shrink-0' })}
                 disabled={sending}
               >
                 <Smile className="h-5 w-5" />
@@ -299,7 +299,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
         )}
 
         {isRecording && (
-          <div className="flex-1 flex items-center justify-between bg-destructive/10 text-destructive rounded-2xl px-4 py-2 h-[44px] mb-0.5">
+          <div className="flex-1 flex items-center justify-between bg-destructive/10 text-destructive rounded-2xl px-4 py-2 h-[40px]">
             <div className="flex items-center gap-2 animate-in fade-in">
               <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
               <span className="text-sm font-medium tabular-nums">{formatTime(recordingTime)}</span>
@@ -319,7 +319,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
         <Button
           size="icon"
           className={cn(
-            "rounded-full shrink-0 mb-0.5 h-10 w-10 transition-colors shadow-sm",
+            "rounded-full shrink-0 h-10 w-10 transition-colors shadow-sm",
             isRecording || text.trim() 
               ? "bg-primary hover:bg-primary/90 text-primary-foreground" 
               : "bg-secondary text-foreground hover:bg-secondary/80"

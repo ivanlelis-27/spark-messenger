@@ -238,7 +238,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-foreground shrink-0"
+              className="text-muted-foreground hover:text-foreground shrink-0 h-10 w-10"
               onClick={() => fileInputRef.current?.click()}
               disabled={sending}
             >

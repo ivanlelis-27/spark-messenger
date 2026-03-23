@@ -13,9 +13,12 @@ export type MessageWithDetails = Message & {
 
 interface MessageState {
   messagesByConversation: Record<string, MessageWithDetails[]>
+  pendingMessagesByConversation: Record<string, (MessageWithDetails & { isOptimistic?: boolean })[]>
   isLoadingMessages: boolean
   setMessages: (conversationId: string, messages: MessageWithDetails[]) => void
   addMessage: (conversationId: string, message: MessageWithDetails) => void
+  addPendingMessage: (conversationId: string, message: MessageWithDetails & { isOptimistic?: boolean }) => void
+  removePendingMessage: (conversationId: string, messageId: string) => void
   updateMessage: (conversationId: string, messageId: string, updates: Partial<MessageWithDetails>) => void
   deleteMessage: (conversationId: string, messageId: string) => void
   setIsLoadingMessages: (loading: boolean) => void
@@ -25,6 +28,7 @@ interface MessageState {
 
 export const useMessageStore = create<MessageState>((set) => ({
   messagesByConversation: {},
+  pendingMessagesByConversation: {},
   isLoadingMessages: false,
   setMessages: (conversationId, messages) =>
     set((state) => ({
@@ -42,6 +46,26 @@ export const useMessageStore = create<MessageState>((set) => ({
         messagesByConversation: {
           ...state.messagesByConversation,
           [conversationId]: [...existing, message],
+        },
+      }
+    }),
+  addPendingMessage: (conversationId, message) =>
+    set((state) => {
+      const existing = state.pendingMessagesByConversation[conversationId] || []
+      return {
+        pendingMessagesByConversation: {
+          ...state.pendingMessagesByConversation,
+          [conversationId]: [...existing, message],
+        },
+      }
+    }),
+  removePendingMessage: (conversationId, messageId) =>
+    set((state) => {
+      const existing = state.pendingMessagesByConversation[conversationId] || []
+      return {
+        pendingMessagesByConversation: {
+          ...state.pendingMessagesByConversation,
+          [conversationId]: existing.filter((m) => m.id !== messageId),
         },
       }
     }),

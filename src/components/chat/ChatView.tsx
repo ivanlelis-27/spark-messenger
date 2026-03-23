@@ -126,6 +126,7 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
 
           if (sender) {
             addMessage(conversation.id, { ...newMsg, sender } as MessageWithDetails)
+            setTyping(conversation.id, []) // Eliminate typing ghosting instantly
           }
         }
       )
@@ -134,7 +135,7 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [supabase, conversation.id, addMessage])
+  }, [supabase, conversation.id, addMessage, setTyping])
 
   // Real-time reactions subscription
   useEffect(() => {
@@ -290,8 +291,8 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
           </div>
         ) : (
           <>
-            {messages.map((msg, idx) => {
-              const prevMsg = idx > 0 ? messages[idx - 1] : null
+            {([...messages, ...(useMessageStore(s => s.pendingMessagesByConversation[conversation.id] || []))]).map((msg, idx, arr) => {
+              const prevMsg = idx > 0 ? arr[idx - 1] : null
               const showDateLabel =
                 !prevMsg || getDateLabel(msg.created_at) !== getDateLabel(prevMsg.created_at)
               const showAvatar = !prevMsg || prevMsg.sender_id !== msg.sender_id
@@ -300,7 +301,7 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
               )
 
               return (
-                <div key={msg.id}>
+                <div key={msg.id} className={(msg as any).isOptimistic ? "opacity-70 animate-pulse pointer-events-none" : ""}>
                   {showDateLabel && (
                     <div className="flex items-center justify-center py-4">
                       <span className="text-[11px] text-muted-foreground bg-secondary px-3 py-1 rounded-full">

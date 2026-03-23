@@ -71,3 +71,11 @@
 - [x] Ensure Sidebar (conversation list) correctly hides on mobile when a chat is open
 - [x] Ensure navigating back from a chat to the list works flawlessly on mobile
 - [x] Fix touch targets, padding, and safe-area adjustments for mobile devices
+- [x] Unify button sizing and footer height layouts exactly to mathematical grids
+- [x] Verify PWA constraints and fallbacks
+
+## Phase 11: Performance & UX Engineering
+- [ ] Fix mobile camera playback permissions (WebRTC device constraints configuration)
+- [ ] Add instant page transitions (Loading.tsx and Skeleton layouts for Chats/Settings)
+- [ ] Eliminate "is typing" ghosting delay via explicit `stop_typing` event emission
+- [ ] Implement Optimistic Local UI Rendering for Image Uploads (Instant previews)

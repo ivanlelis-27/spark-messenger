@@ -18,9 +18,12 @@ const ICE_SERVERS = {
 
 export async function getMediaStreamWithFallback() {
   try {
-    return await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+    return await navigator.mediaDevices.getUserMedia({ 
+      audio: true, 
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+    })
   } catch (err: any) {
-    if (err.name === 'NotReadableError' || err.name === 'NotAllowedError') {
+    if (err.name === 'NotReadableError' || err.name === 'NotAllowedError' || err.name === 'OverconstrainedError') {
       toast.warning('Camera unavailable or locked. Joining with audio only.')
       return await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     }
@@ -43,12 +46,14 @@ export function CallOverlay() {
   useEffect(() => {
     if (localVideoRef.current && store.localStream) {
       localVideoRef.current.srcObject = store.localStream
+      localVideoRef.current.play().catch(err => console.error('Local video play failed:', err))
     }
   }, [store.localStream, store.callState])
 
   useEffect(() => {
     if (remoteVideoRef.current && store.remoteStream) {
       remoteVideoRef.current.srcObject = store.remoteStream
+      remoteVideoRef.current.play().catch(err => console.error('Remote video play failed:', err))
     }
   }, [store.remoteStream, store.callState])
 

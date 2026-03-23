@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/lib/stores/useAuthStore'
+import { useMessageStore } from '@/lib/stores/useMessageStore'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Send, Image as ImageIcon, Smile, Mic, Square, Trash2, Gift } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -22,6 +23,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
   const supabase = createClient()
   const { user: currentUser } = useAuthStore()
   const { resolvedTheme } = useTheme()
+  const { addPendingMessage, removePendingMessage } = useMessageStore()
 
   function notifyPush(content: string) {
     if (!currentUser) return
@@ -105,6 +107,26 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
       return
     }
 
+    // Optimistic preview: show image immediately using a local object URL
+    const localUrl = URL.createObjectURL(file)
+    const tempId = `pending-${Date.now()}`
+    if (currentUser) {
+      addPendingMessage(conversationId, {
+        id: tempId,
+        conversation_id: conversationId,
+        sender_id: senderId,
+        content: null,
+        type: 'image',
+        media_url: localUrl,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_secret: false,
+        reply_to_id: null,
+        sender: currentUser as any,
+        isOptimistic: true,
+      } as any)
+    }
+
     setSending(true)
     const ext = file.name.split('.').pop()
     const path = `${conversationId}/${Date.now()}.${ext}`
@@ -114,6 +136,8 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
       .upload(path, file)
 
     if (uploadError) {
+      removePendingMessage(conversationId, tempId)
+      URL.revokeObjectURL(localUrl)
       toast.error('Failed to upload image')
       setSending(false)
       return
@@ -130,6 +154,10 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
       type: 'image',
       media_url: urlData.publicUrl,
     })
+    
+    // Real message confirmed — remove optimistic bubble
+    removePendingMessage(conversationId, tempId)
+    URL.revokeObjectURL(localUrl)
     if (!insertError) notifyPush('📷 Sent an image')
 
     setSending(false)

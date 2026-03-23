@@ -144,7 +144,7 @@ export function Sidebar({ currentUser, onMobileNavToChat }: SidebarProps) {
   )
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border safe-area-inset-top">
         <div className="flex items-center gap-3">

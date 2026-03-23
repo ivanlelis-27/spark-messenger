@@ -44,12 +44,22 @@ export function EnableNotificationsButton() {
 
   async function subscribeToPush() {
     if (!user) return
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+       toast.error('Push notifications are not configured in this environment.')
+       return
+    }
+
     setLoading(true)
     try {
-      const registration = await navigator.serviceWorker.ready
+      // Don't wait forever if SW is broken
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 5000))
+      ])
+      
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlB64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!.trim())
+        applicationServerKey: urlB64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY.trim())
       })
 
       // Save to Supabase

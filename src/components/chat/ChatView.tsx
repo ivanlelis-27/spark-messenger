@@ -53,18 +53,41 @@ export function ChatView({ conversation, currentUser }: ChatViewProps) {
 
   async function loadMessages() {
     setIsLoadingMessages(true)
+    // Fast query: no nested joins
     const { data } = await supabase
       .from('messages')
-      .select('*, sender:profiles!messages_sender_id_fkey(*), reactions(*, profile:profiles(*))')
+      .select('*, sender:profiles!messages_sender_id_fkey(*)')
       .eq('conversation_id', conversation.id)
       .order('created_at', { ascending: true })
       .limit(100)
 
     if (data) {
-      setMessages(conversation.id, data as MessageWithDetails[])
+      // Attach empty reactions arrays for now so UI renders immediately
+      const rows = data as any[]
+      const withReactions = rows.map(m => ({ ...m, reactions: [] })) as MessageWithDetails[]
+      setMessages(conversation.id, withReactions)
+      setIsLoadingMessages(false)
+      setInitialLoadDone(true)
+
+      // Then lazily load reactions in the background
+      const messageIds = rows.map(m => m.id as string)
+      if (messageIds.length > 0) {
+        const { data: reactions } = await supabase
+          .from('reactions')
+          .select('*, profile:profiles(*)')
+          .in('message_id', messageIds)
+
+        if (reactions && reactions.length > 0) {
+          // Group by message_id and push into store
+          reactions.forEach((r: any) => {
+            addReaction(conversation.id, r.message_id, r)
+          })
+        }
+      }
+    } else {
+      setIsLoadingMessages(false)
+      setInitialLoadDone(true)
     }
-    setIsLoadingMessages(false)
-    setInitialLoadDone(true)
   }
 
   // Scroll on new messages

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import type { MessageWithDetails } from '@/lib/stores/useMessageStore'
+import { useMessageStore } from '@/lib/stores/useMessageStore'
+import { useConversationStore } from '@/lib/stores/useConversationStore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn, getInitials } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -28,6 +30,9 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
   const supabase = createClient()
   const [showPicker, setShowPicker] = useState(false)
   const [revealed, setRevealed] = useState(false)
+  const { addReaction, removeReaction } = useMessageStore()
+  const { activeConversation } = useConversationStore()
+  const conversationId = activeConversation?.id || ''
 
   const isSecret = (message as any).is_secret === true
 
@@ -42,26 +47,57 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
     const emojiStr = emojiData.native
     const existing = message.reactions?.find(r => r.emoji === emojiStr && r.user_id === currentUserId)
     if (existing) {
+      // Optimistic remove
+      removeReaction(conversationId, existing.id)
       await supabase.from('reactions').delete().eq('id', existing.id)
     } else {
-      await supabase.from('reactions').insert({
+      // Optimistic add — create a temp reaction immediately
+      const tempReaction = {
+        id: `temp-${Date.now()}`,
         message_id: message.id,
         user_id: currentUserId,
-        emoji: emojiStr
-      })
+        emoji: emojiStr,
+        created_at: new Date().toISOString(),
+        profile: null as any,
+      }
+      addReaction(conversationId, message.id, tempReaction)
+      const { data: inserted } = await supabase
+        .from('reactions')
+        .insert({ message_id: message.id, user_id: currentUserId, emoji: emojiStr })
+        .select('*, profile:profiles(*)')
+        .single()
+      // Replace temp with real record
+      if (inserted) {
+        removeReaction(conversationId, tempReaction.id)
+        addReaction(conversationId, message.id, inserted as any)
+      }
     }
   }
 
   async function toggleReaction(emojiStr: string) {
     const existing = message.reactions?.find(r => r.emoji === emojiStr && r.user_id === currentUserId)
     if (existing) {
+      removeReaction(conversationId, existing.id)
       await supabase.from('reactions').delete().eq('id', existing.id)
     } else {
-      await supabase.from('reactions').insert({
+      const tempReaction = {
+        id: `temp-${Date.now()}`,
         message_id: message.id,
         user_id: currentUserId,
-        emoji: emojiStr
-      })
+        emoji: emojiStr,
+        created_at: new Date().toISOString(),
+        profile: null as any,
+      }
+      addReaction(conversationId, message.id, tempReaction)
+      const { data: inserted } = await supabase
+        .from('reactions')
+        .insert({ message_id: message.id, user_id: currentUserId, emoji: emojiStr })
+        .select('*, profile:profiles(*)')
+        .single()
+      if (inserted) {
+        removeReaction(conversationId, tempReaction.id)
+        addReaction(conversationId, message.id, inserted as any)
+      }
     }
   }
 

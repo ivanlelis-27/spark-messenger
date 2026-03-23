@@ -58,4 +58,11 @@
 - [x] Error handling and toast notifications
 - [x] Offline support (service worker cache strategy)
 - [x] Lighthouse / PWA audit
-- [ ] Deploy to Vercel
+- [x] Deploy to Vercel
+
+## Phase 9: Couples Features (Brainstorming)
+- [x] Idea 1: Shared Memory Lane / Media Vault
+- [x] Idea 2: Love Notes (blur-to-reveal)
+- [ ] Idea 3: Live Drawing/Doodling
+- [ ] Idea 4: Shared Date Night & To-Do Lists
+- [ ] Idea 5: Daily "Couple Quiz" prompts

@@ -246,6 +246,27 @@ create table public.push_subscriptions (
 
 ---
 
+### Phase 9 — Couples Features
+
+#### Idea 1: Shared Memory Lane / Media Vault
+- **[NEW] `app/(app)/c/[id]/media/page.tsx`**: A dedicated gallery page fetching all messages where `type = 'image'` or `type = 'audio'`.
+- **[MODIFY] `components/chat/ChatHeader.tsx`**: Add a `FolderHeart` or `Image` icon button linking to the media vault.
+
+#### Idea 2: Love Notes (blur-to-reveal)
+- **[MODIFY] `messages` table**: Add a `is_secret` boolean column.
+- **[MODIFY] `MessageInput.tsx`**: Add a toggle button (e.g., a Gift icon) to mark the current message as a Love Note.
+- **[MODIFY] `MessageBubble.tsx`**: If `is_secret` is true, render a blurred overlay that requires a click/hold to reveal.
+
+#### Idea 3: The "Miss You" Screen-Shake Button
+- **[MODIFY] `ChatHeader.tsx`**: Add a giant Heart button.
+- **[MODIFY] `ChatView.tsx`**: Listen to a new Realtime Broadcast event (`nudge`). When received, trigger a screen shake CSS animation and play a sound or show a huge floating heart.
+
+#### Idea 4: Shared Date Night & To-Do Lists
+- **[NEW] Database Table `todos`**: `id, conversation_id, title, is_completed, created_at`.
+- **[NEW] `components/chat/SharedTodoList.tsx`**: A flyout or drawer panel in the chat view to see and check off tasks in real-time.
+
+---
+
 ## Verification Plan
 
 ### Phase 1 — Setup

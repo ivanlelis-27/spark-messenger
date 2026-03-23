@@ -6,7 +6,7 @@ import type { ConversationWithDetails } from '@/lib/stores/useConversationStore'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { getInitials } from '@/lib/utils'
-import { ArrowLeft, Phone, Video, Info } from 'lucide-react'
+import { ArrowLeft, Phone, Image as ImageIcon, Info } from 'lucide-react'
 
 interface ChatHeaderProps {
   conversation: ConversationWithDetails
@@ -56,9 +56,9 @@ export function ChatHeader({ conversation, currentUserId }: ChatHeaderProps) {
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
           <Phone className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-          <Video className="h-4 w-4" />
-        </Button>
+        <Link href={`/c/${conversation.id}/media`} className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground text-primary/80 hover:text-primary' })}>
+          <ImageIcon className="h-4 w-4" />
+        </Link>
         <Link href={`/c/${conversation.id}/settings`} className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'text-muted-foreground hover:text-foreground' })}>
           <Info className="h-4 w-4" />
         </Link>

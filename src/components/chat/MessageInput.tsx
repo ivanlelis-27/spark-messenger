@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/lib/stores/useAuthStore'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Send, Image as ImageIcon, Smile, Mic, Square, Trash2 } from 'lucide-react'
+import { Send, Image as ImageIcon, Smile, Mic, Square, Trash2, Gift } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -38,6 +38,7 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
   }
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+  const [isSecret, setIsSecret] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -81,13 +82,15 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
       sender_id: senderId,
       content: trimmed,
       type: 'text',
+      is_secret: isSecret,
     })
 
     if (error) {
       toast.error('Failed to send message')
     } else {
-      notifyPush(trimmed)
+      notifyPush(isSecret ? '💌 Sent a Love Note' : trimmed)
       setText('')
+      setIsSecret(false)
       if (textareaRef.current) textareaRef.current.style.height = 'auto'
     }
     setSending(false)
@@ -266,7 +269,20 @@ export function MessageInput({ conversationId, senderId, onTyping }: MessageInpu
               </PopoverContent>
             </Popover>
 
-            {/* Text input */}
+            {/* Love Note toggle */}
+            <button
+              type="button"
+              title="Send as Love Note (tap to reveal)"
+              onClick={() => setIsSecret(v => !v)}
+              className={cn(
+                'p-2 rounded-full transition-colors shrink-0',
+                isSecret
+                  ? 'text-pink-500 bg-pink-500/10 hover:bg-pink-500/20'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+              )}
+            >
+              <Gift className="h-5 w-5" />
+            </button>
             <div className="flex-1 relative">
               <textarea
                 ref={textareaRef}

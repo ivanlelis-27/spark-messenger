@@ -127,6 +127,7 @@ export function Sidebar({ currentUser, onMobileNavToChat }: SidebarProps) {
 
   function getLastMessagePreview(convo: ConversationWithDetails): string {
     if (!convo.last_message) return 'No messages yet'
+    if ((convo.last_message as any).is_secret) return '💌 Love Note'
     if (convo.last_message.type === 'image') return '📷 Image'
     if (convo.last_message.type === 'audio') return '🎤 Voice message'
     return convo.last_message.content || ''

@@ -27,6 +27,9 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
   const { resolvedTheme } = useTheme()
   const supabase = createClient()
   const [showPicker, setShowPicker] = useState(false)
+  const [revealed, setRevealed] = useState(false)
+
+  const isSecret = (message as any).is_secret === true
 
   const reactionGroups = (message.reactions || []).reduce((acc, curr) => {
     if (!acc[curr.emoji]) acc[curr.emoji] = []
@@ -95,31 +98,47 @@ export function MessageBubble({ message, isOwn, showAvatar, isRead, currentUserI
               'px-3.5 py-2.5 rounded-2xl text-[14px] leading-relaxed break-words relative shadow-sm',
               isOwn
                 ? 'bg-primary text-primary-foreground rounded-br-sm'
-                : 'bg-card border border-border text-foreground rounded-bl-sm'
+                : 'bg-card border border-border text-foreground rounded-bl-sm',
+              isSecret && !revealed && 'min-w-[140px] min-h-[64px] select-none'
             )}
           >
-            {message.type === 'image' && message.media_url && (
-              <img
-                src={message.media_url}
-                alt="Shared image"
-                className="rounded-lg max-w-[280px] w-full mb-1"
-                loading="lazy"
-              />
-            )}
-            {message.type === 'audio' && message.media_url && (
-              <audio controls className="max-w-[240px]" preload="metadata">
-                <source src={message.media_url} />
-              </audio>
-            )}
-            {message.content && (
-              <div className="whitespace-pre-wrap">
-                {message.content.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
-                  if (part.match(/^https?:\/\//)) {
-                    return <LinkPreview key={i} url={part} />
-                  }
-                  return <span key={i}>{part}</span>
-                })}
-              </div>
+            {/* Love Note — hide content until tapped */}
+            {isSecret && !revealed ? (
+              <button
+                onClick={() => setRevealed(true)}
+                className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-1 bg-pink-500/15 hover:bg-pink-500/25 transition-colors cursor-pointer z-10 backdrop-blur-sm"
+              >
+                <span className="text-xl leading-none">💌</span>
+                <span className="text-[11px] font-semibold text-pink-400 mt-0.5">
+                  {isOwn ? 'Love Note' : 'Tap to reveal'}
+                </span>
+              </button>
+            ) : (
+              <>
+                {message.type === 'image' && message.media_url && (
+                  <img
+                    src={message.media_url}
+                    alt="Shared image"
+                    className="rounded-lg max-w-[280px] w-full mb-1"
+                    loading="lazy"
+                  />
+                )}
+                {message.type === 'audio' && message.media_url && (
+                  <audio controls className="max-w-[240px]" preload="metadata">
+                    <source src={message.media_url} />
+                  </audio>
+                )}
+                {message.content && (
+                  <div className="whitespace-pre-wrap">
+                    {message.content.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
+                      if (part.match(/^https?:\/\//)) {
+                        return <LinkPreview key={i} url={part} />
+                      }
+                      return <span key={i}>{part}</span>
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
           
